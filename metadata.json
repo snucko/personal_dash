@@ -1,0 +1,5 @@
+{
+  "name": "Personal Dashboard",
+  "description": "A personal dashboard displaying weather, time, a calendar, a todo list, and sports information for the NFL and Boston Bruins.",
+  "requestFramePermissions": []
+}
