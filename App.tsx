@@ -5,7 +5,6 @@ import WeatherWidget from './components/WeatherWidget';
 import CalendarWidget from './components/CalendarWidget';
 import TodoWidget from './components/TodoWidget';
 import SportsWidget from './components/SportsWidget';
-import ScoreStreamWidget from './components/ScoreStreamWidget';
 import { ICONS } from './constants';
 
 // FIX: Define/augment the AIStudio interface and use it for window.aistudio to resolve type conflicts.
@@ -92,7 +91,7 @@ const App: React.FC = () => {
       <main className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <ClockWidget />
         <WeatherWidget />
-        <ScoreStreamWidget />
+        <SportsWidget team="NFL" league="NFL" icon={ICONS.nfl} />
         <SportsWidget team="Boston Bruins" league="NHL" icon={ICONS.bruins} />
         <div className="sm:col-span-2 lg:col-span-4 xl:col-span-2">
             <CalendarWidget accessToken={accessToken} />

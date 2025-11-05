@@ -1,6 +1,5 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
-import type { WeatherData, SportsData } from '../types';
+import type { WeatherData, SportsData, Game } from '../types';
 
 if (!process.env.API_KEY) {
     console.warn("API_KEY environment variable not set. Using a mock service.");
@@ -46,19 +45,29 @@ export const getWeatherData = async (): Promise<WeatherData> => {
 
 export const getSportsData = async (team: string): Promise<SportsData> => {
     if (!ai) {
-         const isNfl = team.toLowerCase().includes('nfl');
-        return mockDelay({
-            status: 'LIVE',
-            headline: isNfl ? 'Live: Chiefs @ Ravens' : 'Live vs. Maple Leafs',
-            details: isNfl ? '14-10 | Q2 02:15' : '2-1 | P2 08:45'
-        });
+        if (team === 'NFL') {
+            // Updated mock data to show clearly upcoming games to avoid confusion.
+            return mockDelay([
+                { id: 'DAL@PHI', awayTeam: { name: 'Cowboys', score: '' }, homeTeam: { name: 'Eagles', score: '' }, status: 'UPCOMING', details: 'Sun 1:00 PM' },
+                { id: 'KC@DEN', awayTeam: { name: 'Chiefs', score: '' }, homeTeam: { name: 'Broncos', score: '' }, status: 'UPCOMING', details: 'Sun 4:25 PM' },
+                { id: 'GB@SF', awayTeam: { name: 'Packers', score: '' }, homeTeam: { name: '49ers', score: '' }, status: 'UPCOMING', details: 'Sun 8:20 PM' },
+            ]);
+        }
+        return mockDelay([
+            { id: 'BOS@TOR', awayTeam: { name: 'Bruins', score: '2' }, homeTeam: { name: 'Maple Leafs', score: '1' }, status: 'LIVE', details: 'P2 08:45' }
+        ]);
     }
 
     let prompt: string;
     if (team.toLowerCase() === 'nfl') {
-        prompt = `Provide an update for the NFL. First, check if there are any games happening right now. If so, give me the live score for the most exciting game. The headline should be the matchup (e.g., 'Chiefs @ Ravens'), and the details should be the score and game status (e.g., '14-7 | Q2 05:30'). If multiple games are live, pick the one with the closest score or involving top teams. If no games are live, tell me about the most anticipated upcoming game this week: who is playing, and the date and time. If it's the offseason, provide a significant news headline.`;
+        const today = new Date().toUTCString();
+        prompt = `The current date is ${today}. Provide a list of today's live or upcoming NFL games.
+- If there are games live right now, prioritize them. Show their live scores, quarter, and time remaining. List up to 3 prominent live games.
+- If no games are live, but there are games scheduled for later today, list the 3 most anticipated upcoming games with their scheduled times.
+- If there are no NFL games at all today, list the 3 most anticipated games for the upcoming week (e.g., next Sunday or Monday Night).
+The response must be a JSON array of game objects.`;
     } else {
-        prompt = `Provide an update for the ${team}. First, check if there's a game happening right now. If so, give me the live score against their opponent and the current game status (e.g., quarter, period, time left). If no game is live, tell me about their next scheduled game: who they're playing, and the date and time of the game. If there's neither a live game nor an upcoming one soon, just give a general recent news headline.`;
+        prompt = `Provide an update for the ${team}. First, check if there's a game happening right now. If so, give me the live score and game status. If no game is live, tell me about their next scheduled game. Return the result as a JSON array containing a single game object.`;
     }
 
     const response = await ai.models.generateContent({
@@ -67,13 +76,32 @@ export const getSportsData = async (team: string): Promise<SportsData> => {
         config: {
             responseMimeType: "application/json",
             responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                    status: { type: Type.STRING, description: "Should be 'LIVE', 'UPCOMING', or 'INFO' based on the content." },
-                    headline: { type: Type.STRING, description: "e.g., 'Live vs. Opponent' or 'Next Game vs. Opponent' or a news headline." },
-                    details: { type: Type.STRING, description: "e.g., '14-7 | Q2 05:30' or 'Sun, Oct 27 @ 1:00 PM EST' or a news snippet." }
-                },
-                required: ["status", "headline", "details"]
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        id: { type: Type.STRING, description: "A unique ID for the game, e.g., 'KC@BAL'" },
+                        homeTeam: {
+                            type: Type.OBJECT,
+                            properties: {
+                                name: { type: Type.STRING },
+                                score: { type: Type.STRING, description: "Current score as a string, e.g., '14' or '' if upcoming" }
+                            },
+                            required: ["name", "score"]
+                        },
+                        awayTeam: {
+                            type: Type.OBJECT,
+                            properties: {
+                                name: { type: Type.STRING },
+                                score: { type: Type.STRING, description: "Current score as a string, e.g., '10' or '' if upcoming" }
+                            },
+                             required: ["name", "score"]
+                        },
+                        status: { type: Type.STRING, description: "Enum: 'LIVE', 'UPCOMING', 'FINAL', 'INFO'" },
+                        details: { type: Type.STRING, description: "Game status details, e.g., 'Q2 05:30', 'Sun, Oct 27 @ 1:00 PM', 'Final'" }
+                    },
+                    required: ["id", "homeTeam", "awayTeam", "status", "details"]
+                }
             }
         }
     });
