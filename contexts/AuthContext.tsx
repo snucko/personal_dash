@@ -43,10 +43,37 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  // First effect: wait for Google script to load
   useEffect(() => {
     if (!isConfigured) return;
 
-    const initializeGsi = () => {
+    const waitForGoogle = () => {
+      return new Promise<void>((resolve) => {
+        if (window.google?.accounts?.oauth2?.initTokenClient) {
+          resolve();
+          return;
+        }
+
+        let timeoutId: NodeJS.Timeout;
+        const checkGoogleInterval = setInterval(() => {
+          if (window.google?.accounts?.oauth2?.initTokenClient) {
+            clearInterval(checkGoogleInterval);
+            clearTimeout(timeoutId);
+            resolve();
+          }
+        }, 100);
+
+        // 30 second timeout
+        timeoutId = setTimeout(() => {
+          clearInterval(checkGoogleInterval);
+          console.error('Google GSI script did not load within 30 seconds');
+          resolve(); // resolve anyway so we don't hang
+        }, 30000);
+      });
+    };
+
+    waitForGoogle().then(() => {
+      // Now initialize
       if (window.google?.accounts?.oauth2?.initTokenClient) {
         const client = window.google.accounts.oauth2.initTokenClient({
           client_id: GOOGLE_CLIENT_ID,
@@ -78,22 +105,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
         setTokenClient(client);
       }
-    };
-
-    let attempts = 0;
-    const intervalId = setInterval(() => {
-      attempts++;
-      if (window.google?.accounts?.oauth2?.initTokenClient) {
-        initializeGsi();
-        clearInterval(intervalId);
-      }
-      if (attempts > 500) {  // 50 seconds timeout
-        console.error('Google GSI failed to load after 50 seconds');
-        clearInterval(intervalId);
-      }
-    }, 100);
-
-    return () => clearInterval(intervalId);
+    });
   }, [isConfigured, GOOGLE_CLIENT_ID]);
 
   const handleConnectGoogle = () => {
