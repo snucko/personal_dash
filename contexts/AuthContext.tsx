@@ -46,6 +46,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     if (!isConfigured) return;
 
+    const loadGoogleScript = () => {
+      return new Promise((resolve) => {
+        if (window.google?.accounts?.oauth2) {
+          resolve(true);
+          return;
+        }
+        
+        const script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.head.appendChild(script);
+      });
+    };
+
     const initializeGsi = () => {
       if (window.google?.accounts?.oauth2) {
         const client = window.google.accounts.oauth2.initTokenClient({
@@ -80,20 +96,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     };
 
-    let attempts = 0;
-    const intervalId = setInterval(() => {
-      attempts++;
-      if (window.google?.accounts?.oauth2) {
-        initializeGsi();
-        clearInterval(intervalId);
-      }
-      if (attempts > 100) {
-        console.error('Google GSI failed to load after 10 seconds');
-        clearInterval(intervalId);
-      }
-    }, 100);
-
-    return () => clearInterval(intervalId);
+    loadGoogleScript().then(() => {
+      let attempts = 0;
+      const intervalId = setInterval(() => {
+        attempts++;
+        if (window.google?.accounts?.oauth2) {
+          initializeGsi();
+          clearInterval(intervalId);
+        }
+        if (attempts > 100) {
+          console.error('Google GSI failed to load after 10 seconds');
+          clearInterval(intervalId);
+        }
+      }, 100);
+      
+      return () => clearInterval(intervalId);
+    });
   }, [isConfigured, GOOGLE_CLIENT_ID]);
 
   const handleConnectGoogle = () => {
