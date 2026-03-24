@@ -46,24 +46,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     if (!isConfigured) return;
 
-    const loadGoogleScript = () => {
-      return new Promise((resolve) => {
-        if (window.google?.accounts?.oauth2) {
-          resolve(true);
-          return;
-        }
-        
-        const script = document.createElement('script');
-        script.src = 'https://accounts.google.com/gsi/client';
-        script.async = true;
-        script.onload = () => resolve(true);
-        script.onerror = () => resolve(false);
-        document.head.appendChild(script);
-      });
-    };
-
     const initializeGsi = () => {
-      if (window.google?.accounts?.oauth2) {
+      if (window.google?.accounts?.oauth2?.initTokenClient) {
         const client = window.google.accounts.oauth2.initTokenClient({
           client_id: GOOGLE_CLIENT_ID,
           scope: [
@@ -96,22 +80,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     };
 
-    loadGoogleScript().then(() => {
-      let attempts = 0;
-      const intervalId = setInterval(() => {
-        attempts++;
-        if (window.google?.accounts?.oauth2?.initTokenClient) {
-          initializeGsi();
-          clearInterval(intervalId);
-        }
-        if (attempts > 300) {  // 30 seconds timeout
-          console.error('Google GSI failed to load after 30 seconds');
-          clearInterval(intervalId);
-        }
-      }, 100);
-      
-      return () => clearInterval(intervalId);
-    });
+    let attempts = 0;
+    const intervalId = setInterval(() => {
+      attempts++;
+      if (window.google?.accounts?.oauth2?.initTokenClient) {
+        initializeGsi();
+        clearInterval(intervalId);
+      }
+      if (attempts > 500) {  // 50 seconds timeout
+        console.error('Google GSI failed to load after 50 seconds');
+        clearInterval(intervalId);
+      }
+    }, 100);
+
+    return () => clearInterval(intervalId);
   }, [isConfigured, GOOGLE_CLIENT_ID]);
 
   const handleConnectGoogle = () => {
