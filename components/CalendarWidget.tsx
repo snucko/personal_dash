@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Clock } from 'lucide-react';
 import WidgetCard from './WidgetCard';
 import { ICONS } from '../constants';
 import { getCalendarEvents } from '../services/googleApiService';
@@ -29,7 +31,7 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ accessToken }) => {
         const data = await getCalendarEvents(accessToken, firstDay.toISOString(), lastDay.toISOString());
         setEvents(data);
       } catch (err) {
-        setError('Failed to fetch calendar events.');
+        setError(err instanceof Error ? err.message : 'Failed to fetch calendar events.');
         console.error(err);
       } finally {
         setLoading(false);
@@ -125,40 +127,105 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ accessToken }) => {
 
   return (
     <WidgetCard title="Calendar" icon={ICONS.calendar} className="h-full">
-        <div className="flex flex-col md:flex-row h-full gap-4">
-            <div className="flex-shrink-0">
-                <div className="flex items-center justify-between mb-4">
-                <button onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-slate-700 transition-colors">&lt;</button>
-                <h3 className="font-semibold text-lg text-white">{monthName} {year}</h3>
-                <button onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-slate-700 transition-colors">&gt;</button>
+        <div className="flex flex-col h-full gap-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <h3 className="font-bold text-3xl text-white tracking-tight">{monthName}</h3>
+                    <span className="text-2xl text-slate-500 font-light">{year}</span>
                 </div>
-                <div className="grid grid-cols-7 gap-y-2 text-center text-xs text-slate-400 mb-2">
-                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => <div key={day}>{day}</div>)}
-                </div>
-                <div className="grid grid-cols-7 gap-y-2 place-items-center">
-                {renderCalendarGrid()}
+                <div className="flex items-center gap-2 bg-slate-900/50 p-1 rounded-full border border-slate-700">
+                    <button onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 text-xs font-semibold text-slate-400 hover:text-white uppercase tracking-wider">Today</button>
+                    <button onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
+                        <ChevronRight className="w-5 h-5" />
+                    </button>
                 </div>
             </div>
-            <div className="flex-grow border-t md:border-t-0 md:border-l border-slate-700 mt-4 md:mt-0 pt-4 md:pt-0 md:pl-4">
-                <h4 className="font-bold text-white mb-2">{selectedDate.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</h4>
-                {loading ? (
-                    <p className="text-slate-400">Loading events...</p>
-                ) : error ? (
-                    <p className="text-red-400">{error}</p>
-                ) : selectedDayEvents.length > 0 ? (
-                    <ul className="space-y-2 overflow-y-auto max-h-48 pr-2">
-                        {selectedDayEvents.map(event => (
-                            <li key={event.id} className="text-sm bg-slate-700/50 p-2 rounded-md">
-                                <a href={event.htmlLink} target="_blank" rel="noopener noreferrer" className="hover:text-sky-300">
-                                    <p className="font-semibold text-slate-200">{event.summary}</p>
-                                    <p className="text-slate-400">{formatEventTime(event)}</p>
-                                </a>
-                            </li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p className="text-slate-400">No events for this day.</p>
-                )}
+
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 flex-grow">
+                {/* Calendar Grid Section */}
+                <div className="xl:col-span-7">
+                    <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => <div key={day}>{day}</div>)}
+                    </div>
+                    <div className="grid grid-cols-7 gap-2 place-items-center">
+                        {renderCalendarGrid()}
+                    </div>
+                </div>
+
+                {/* Events List Section */}
+                <div className="xl:col-span-5 flex flex-col border-t xl:border-t-0 xl:border-l border-slate-700 pt-6 xl:pt-0 xl:pl-8">
+                    <div className="mb-6">
+                        <h4 className="text-xs font-bold text-sky-400 uppercase tracking-widest mb-1">Schedule for</h4>
+                        <p className="text-xl font-bold text-white">{selectedDate.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}</p>
+                    </div>
+
+                    <div className="flex-grow overflow-y-auto pr-2 space-y-4 custom-scrollbar">
+                        <AnimatePresence mode="wait">
+                            {loading ? (
+                                <motion.div 
+                                    key="loading"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="flex items-center gap-3 text-slate-500 animate-pulse"
+                                >
+                                    <div className="w-2 h-2 bg-sky-500 rounded-full"></div>
+                                    <p>Syncing events...</p>
+                                </motion.div>
+                            ) : error ? (
+                                <motion.div 
+                                    key="error"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="p-4 bg-red-900/20 border border-red-500/30 rounded-xl"
+                                >
+                                    <p className="text-red-400 text-sm">{error}</p>
+                                </motion.div>
+                            ) : selectedDayEvents.length > 0 ? (
+                                <motion.div 
+                                    key="events"
+                                    initial={{ opacity: 0, x: 10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="space-y-3"
+                                >
+                                    {selectedDayEvents.map((event, idx) => (
+                                        <motion.div 
+                                            key={event.id}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: idx * 0.05 }}
+                                            className="group relative pl-4 border-l-2 border-sky-500/30 hover:border-sky-500 transition-colors"
+                                        >
+                                            <a href={event.htmlLink} target="_blank" rel="noopener noreferrer" className="block">
+                                                <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-tighter mb-0.5">
+                                                    <Clock className="w-3 h-3" />
+                                                    {formatEventTime(event)}
+                                                </div>
+                                                <p className="text-base font-semibold text-slate-200 group-hover:text-white transition-colors">{event.summary}</p>
+                                                {event.location && <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                                                    <MapPin className="w-3 h-3" />
+                                                    {event.location}
+                                                </p>}
+                                            </a>
+                                        </motion.div>
+                                    ))}
+                                </motion.div>
+                            ) : (
+                                <motion.div 
+                                    key="empty"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="flex flex-col items-center justify-center h-32 text-slate-600 italic"
+                                >
+                                    <p>No events scheduled</p>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                </div>
             </div>
         </div>
     </WidgetCard>

@@ -1,6 +1,4 @@
-
 import React, { useState, useEffect } from 'react';
-import { getWeatherData } from '../services/geminiService';
 import type { WeatherData } from '../types';
 import WidgetCard from './WidgetCard';
 import { ICONS } from '../constants';
@@ -24,37 +22,20 @@ const LoadingSkeleton: React.FC = () => (
 );
 
 const WeatherWidget: React.FC = () => {
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchWeather = async () => {
-      try {
-        setError(null);
-        setLoading(true);
-        const data = await getWeatherData();
-        setWeather(data);
-      } catch (err) {
-        setError("Could not fetch weather data.");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchWeather();
-  }, []);
+  const [weather, setWeather] = useState<WeatherData | null>({
+    temperature: 62,
+    condition: 'Partly Cloudy',
+    description: 'Bristol, RI',
+    location: 'Bristol, RI'
+  });
 
   return (
     <WidgetCard title={weather?.location || "Weather"} icon={ICONS.weather}>
-      <div className="flex-grow flex items-center justify-center">
-        {loading ? (
+      <div className="flex-grow flex flex-col items-center justify-center">
+        {!weather ? (
             <LoadingSkeleton />
-        ) : error ? (
-          <p className="text-center text-red-400">{error}</p>
-        ) : weather && (
-          <div className="text-center">
+        ) : (
+          <div className="text-center w-full">
             <div className="flex justify-center mb-2">
                 <WeatherIcon condition={weather.condition} />
             </div>

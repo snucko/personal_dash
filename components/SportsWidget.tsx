@@ -1,7 +1,5 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { SportsData, Game } from '../types';
-import { getSportsData } from '../services/geminiService';
 import WidgetCard from './WidgetCard';
 
 interface SportsWidgetProps {
@@ -47,32 +45,18 @@ const GameRow: React.FC<{ game: Game }> = ({ game }) => {
 }
 
 const SportsWidget: React.FC<SportsWidgetProps> = ({ team, league, icon }) => {
-  const [data, setData] = useState<SportsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setError(null);
-        setLoading(true);
-        const result = await getSportsData(team);
-        setData(result);
-      } catch (err) {
-        setError(`Could not fetch ${league} data.`);
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-    // Refresh data every 10 minutes to respect API rate limits.
-    const intervalId = setInterval(fetchData, 600000); 
-    return () => clearInterval(intervalId);
-  }, [team, league]);
+  const [data] = useState<SportsData>([
+    {
+      id: '1',
+      status: 'FINAL',
+      details: 'Final',
+      awayTeam: { name: 'Away Team', score: 3 },
+      homeTeam: { name: team, score: 4 }
+    }
+  ]);
 
   const renderContent = () => {
-    if (loading && !data) {
+    if (!data) {
       return (
         <div className="animate-pulse space-y-4">
           {[...Array(2)].map((_, i) => (
@@ -88,11 +72,7 @@ const SportsWidget: React.FC<SportsWidgetProps> = ({ team, league, icon }) => {
       );
     }
 
-    if (error) {
-      return <p className="text-red-400 text-center">{error}</p>;
-    }
-
-    if (data && data.length > 0) {
+    if (data.length > 0) {
       return (
         <div className="space-y-3">
           {data.map((game) => (

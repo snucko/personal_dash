@@ -12,16 +12,6 @@ export interface WeatherData {
   location: string;
 }
 
-export interface Game {
-  id: string;
-  homeTeam: { name: string; score: string; };
-  awayTeam: { name: string; score: string; };
-  status: 'LIVE' | 'UPCOMING' | 'FINAL' | 'INFO';
-  details: string; // e.g., "Q2 05:30", "Sun 1:00 PM", "Final"
-}
-
-export type SportsData = Game[];
-
 export interface GoogleCalendarEvent {
     id: string;
     summary: string;
@@ -37,3 +27,26 @@ export interface GoogleTask {
     notes?: string;
     due?: string;
 }
+
+export interface GoogleUserProfile {
+    name: string;
+    email: string;
+    picture: string;
+}
+
+// FIX: Add Game and SportsData types for the SportsWidget component.
+export interface Game {
+  id: string;
+  status: 'LIVE' | 'UPCOMING' | 'FINAL';
+  details: string;
+  awayTeam: {
+    name: string;
+    score: number | null;
+  };
+  homeTeam: {
+    name: string;
+    score: number | null;
+  };
+}
+
+export type SportsData = Game[];
