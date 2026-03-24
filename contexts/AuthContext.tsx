@@ -80,9 +80,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     };
 
+    let attempts = 0;
     const intervalId = setInterval(() => {
+      attempts++;
       if (window.google?.accounts?.oauth2) {
         initializeGsi();
+        clearInterval(intervalId);
+      }
+      if (attempts > 100) {
+        console.error('Google GSI failed to load after 10 seconds');
         clearInterval(intervalId);
       }
     }, 100);
