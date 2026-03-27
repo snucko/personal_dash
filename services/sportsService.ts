@@ -97,12 +97,12 @@ const mapEventToGame = (event: ESPNEvent): Game => {
     status,
     details,
     awayTeam: {
-      name: awayTeam.team.displayName.split(' ').pop() || awayTeam.team.displayName,
-      score: awayTeam.score ?? null
+      name: awayTeam?.team?.displayName ? awayTeam.team.displayName.split(' ').pop() || awayTeam.team.displayName : 'Away',
+      score: typeof awayTeam?.score === 'number' ? awayTeam.score : null
     },
     homeTeam: {
-      name: homeTeam.team.displayName.split(' ').pop() || homeTeam.team.displayName,
-      score: homeTeam.score ?? null
+      name: homeTeam?.team?.displayName ? homeTeam.team.displayName.split(' ').pop() || homeTeam.team.displayName : 'Home',
+      score: typeof homeTeam?.score === 'number' ? homeTeam.score : null
     }
   };
 };
