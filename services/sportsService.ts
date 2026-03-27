@@ -107,11 +107,11 @@ const mapEventToGame = (event: ESPNEvent): Game => {
     details,
     awayTeam: {
       name: awayTeam?.team?.displayName ? awayTeam.team.displayName.split(' ').pop() || awayTeam.team.displayName : 'Away',
-      score: getScore(awayTeam?.score)
+      score: awayTeam ? getScore(awayTeam.score) : null
     },
     homeTeam: {
       name: homeTeam?.team?.displayName ? homeTeam.team.displayName.split(' ').pop() || homeTeam.team.displayName : 'Home',
-      score: getScore(homeTeam?.score)
+      score: homeTeam ? getScore(homeTeam.score) : null
     }
   };
 };
