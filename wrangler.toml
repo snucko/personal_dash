@@ -1,0 +1,13 @@
+name = "personal-dashboard"
+type = "javascript"
+account_id = ""
+workers_dev = true
+route = ""
+zone_id = ""
+
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+[build]
+command = "npm run build"
+cwd = "./"

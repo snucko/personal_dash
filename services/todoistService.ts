@@ -14,11 +14,10 @@ interface TodoistResponse {
   tasks: TodoistTask[];
 }
 
-const TODOIST_API_URL = 'https://api.todoist.com/rest/v2';
-const API_KEY = import.meta.env.VITE_TODOIST_API || '';
+// Use Cloudflare Worker proxy instead of direct API (avoids CORS)
+const TODOIST_API_URL = '/api/todoist';
 
 const createHeaders = () => ({
-  'Authorization': `Bearer ${API_KEY}`,
   'Content-Type': 'application/json'
 });
 
@@ -31,10 +30,6 @@ const handleResponse = async (response: Response) => {
 };
 
 export const getTasks = async (): Promise<GoogleTask[]> => {
-  if (!API_KEY) {
-    throw new Error('Todoist API key not configured');
-  }
-
   const response = await fetch(`${TODOIST_API_URL}/tasks`, {
     headers: createHeaders()
   });
@@ -59,10 +54,6 @@ export const getTasks = async (): Promise<GoogleTask[]> => {
 };
 
 export const addTask = async (title: string): Promise<GoogleTask> => {
-  if (!API_KEY) {
-    throw new Error('Todoist API key not configured');
-  }
-
   const response = await fetch(`${TODOIST_API_URL}/tasks`, {
     method: 'POST',
     headers: createHeaders(),
@@ -80,10 +71,6 @@ export const addTask = async (title: string): Promise<GoogleTask> => {
 };
 
 export const updateTask = async (taskId: string, taskUpdate: Partial<GoogleTask>): Promise<GoogleTask> => {
-  if (!API_KEY) {
-    throw new Error('Todoist API key not configured');
-  }
-
   const updateBody: any = {};
   
   if (taskUpdate.title) updateBody.content = taskUpdate.title;
@@ -110,10 +97,6 @@ export const updateTask = async (taskId: string, taskUpdate: Partial<GoogleTask>
 };
 
 export const deleteTask = async (taskId: string): Promise<void> => {
-  if (!API_KEY) {
-    throw new Error('Todoist API key not configured');
-  }
-
   const response = await fetch(`${TODOIST_API_URL}/tasks/${taskId}`, {
     method: 'DELETE',
     headers: createHeaders()
