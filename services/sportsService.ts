@@ -75,13 +75,17 @@ const mapEventToGame = (event: ESPNEvent): Game => {
   if (status === 'LIVE' && competition.status.displayClock) {
     details = `${competition.status.displayClock}`;
   } else if (status === 'UPCOMING') {
-    const date = new Date(event.date);
-    // Show date if it's more than 7 days away
-    const daysAway = Math.ceil((date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-    if (daysAway > 7) {
-      details = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    } else {
-      details = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    try {
+      const date = new Date(event.date);
+      // Show date if it's more than 7 days away
+      const daysAway = Math.ceil((date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+      if (isFinite(daysAway) && daysAway > 7) {
+        details = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      } else {
+        details = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      }
+    } catch {
+      details = 'TBA';
     }
   } else {
     details = 'Final';
