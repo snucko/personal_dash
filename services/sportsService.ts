@@ -40,7 +40,7 @@ interface ESPNScheduleResponse {
   events: ESPNEvent[];
 }
 
-const BRUINS_ID = '25'; // Boston Bruins ESPN ID
+const BRUINS_ID = '1'; // Boston Bruins ESPN ID
 const BRUINS_NAME = 'Boston Bruins';
 
 const mapEventToGame = (event: ESPNEvent): Game => {
@@ -57,9 +57,18 @@ const mapEventToGame = (event: ESPNEvent): Game => {
     status = 'FINAL';
   }
 
-  // Parse competitors
-  const homeTeam = competition.competitors.find(c => c.team.id === BRUINS_ID) || competition.competitors[1];
-  const awayTeam = competition.competitors.find(c => c.team.id !== homeTeam.team.id) || competition.competitors[0];
+  // Parse competitors - prefer Bruins as home, fallback to first team
+  let homeTeam = competition.competitors.find(c => c.team.id === BRUINS_ID);
+  let awayTeam: ESPNCompetitor;
+  
+  if (homeTeam) {
+    // Bruins are home team
+    awayTeam = competition.competitors.find(c => c.team.id !== BRUINS_ID) || competition.competitors[0];
+  } else {
+    // Bruins are away team
+    awayTeam = competition.competitors.find(c => c.team.id === BRUINS_ID) || competition.competitors[0];
+    homeTeam = competition.competitors.find(c => c.team.id !== awayTeam.team.id) || competition.competitors[1];
+  }
 
   // Format details based on status
   let details = '';

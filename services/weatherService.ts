@@ -37,30 +37,42 @@ const getWeatherCondition = (code: number): string => {
 };
 
 export const getUserLocation = (): Promise<GeoLocation> => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     if (!navigator.geolocation) {
-      reject(new Error('Geolocation not supported'));
+      // Fallback if geolocation not available
+      console.warn('Geolocation not supported, using fallback');
+      resolve({ latitude: 41.6726, longitude: -71.2824, city: 'Bristol, RI' });
       return;
     }
 
+    // Set a timeout for geolocation request (user might deny permission)
+    const timeout = setTimeout(() => {
+      console.warn('Geolocation timeout, using fallback');
+      resolve({ latitude: 41.6726, longitude: -71.2824, city: 'Bristol, RI' });
+    }, 5000);
+
     navigator.geolocation.getCurrentPosition(
       async (position) => {
+        clearTimeout(timeout);
         const { latitude, longitude } = position.coords;
         
         // Try to get city name via reverse geocoding
         try {
           const cityName = await reverseGeocode(latitude, longitude);
           resolve({ latitude, longitude, city: cityName });
-        } catch {
+        } catch (err) {
           // If reverse geocoding fails, just return coords
-          resolve({ latitude, longitude });
+          console.warn('Reverse geocoding failed:', err);
+          resolve({ latitude, longitude, city: 'Current Location' });
         }
       },
       (error) => {
+        clearTimeout(timeout);
         // Fallback: Bristol, RI coordinates
-        console.warn('Geolocation error, using fallback:', error.message);
+        console.warn('Geolocation permission denied or error:', error.message);
         resolve({ latitude: 41.6726, longitude: -71.2824, city: 'Bristol, RI' });
-      }
+      },
+      { timeout: 5000 }
     );
   });
 };
