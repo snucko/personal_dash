@@ -76,7 +76,13 @@ const mapEventToGame = (event: ESPNEvent): Game => {
     details = `${competition.status.displayClock}`;
   } else if (status === 'UPCOMING') {
     const date = new Date(event.date);
-    details = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    // Show date if it's more than 7 days away
+    const daysAway = Math.ceil((date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+    if (daysAway > 7) {
+      details = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } else {
+      details = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    }
   } else {
     details = 'Final';
   }
@@ -96,11 +102,11 @@ const mapEventToGame = (event: ESPNEvent): Game => {
   };
 };
 
-export const getBruinsSchedule = async (limit: number = 5): Promise<SportsData> => {
+export const getBruinsSchedule = async (limit: number = 3): Promise<SportsData> => {
   try {
-    // Fetch scoreboard and filter for Bruins
+    // Fetch Bruins schedule
     const response = await fetch(
-      `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard`
+      `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/${BRUINS_ID}/schedule`
     );
 
     if (!response.ok) {
@@ -109,16 +115,13 @@ export const getBruinsSchedule = async (limit: number = 5): Promise<SportsData> 
 
     const data: ESPNScheduleResponse = await response.json();
     
-    // Filter for Bruins games
+    // Get upcoming and recent games
     const bruinsGames = data.events
-      .filter(event => 
-        event.competitions[0]?.competitors?.some(c => c.team.id === BRUINS_ID)
-      )
       .slice(0, limit)
       .map(mapEventToGame);
 
     if (bruinsGames.length === 0) {
-      console.warn('No Bruins games found in scoreboard');
+      console.warn('No Bruins games found in schedule');
     }
 
     return bruinsGames;
