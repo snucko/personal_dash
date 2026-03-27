@@ -27,9 +27,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const handleTokenResponse = async (token: string) => {
     setAccessToken(token);
+    localStorage.setItem('google_access_token', token);
     try {
       const profile = await getUserInfo(token);
       setUserProfile(profile);
+      localStorage.setItem('google_user_profile', JSON.stringify(profile));
     } catch (error) {
       console.error('Google authentication failed:', error);
       setAuthError({
@@ -38,10 +40,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       setAccessToken(null);
       setUserProfile(null);
+      localStorage.removeItem('google_access_token');
+      localStorage.removeItem('google_user_profile');
     } finally {
       setIsConnecting(false);
     }
   };
+
+  // Restore token from localStorage on mount
+  useEffect(() => {
+    const savedToken = localStorage.getItem('google_access_token');
+    const savedProfile = localStorage.getItem('google_user_profile');
+    if (savedToken && savedProfile) {
+      setAccessToken(savedToken);
+      setUserProfile(JSON.parse(savedProfile));
+    }
+  }, []);
 
   // First effect: wait for Google script to load
   useEffect(() => {
@@ -128,6 +142,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setAccessToken(null);
     setUserProfile(null);
     setAuthError(null);
+    localStorage.removeItem('google_access_token');
+    localStorage.removeItem('google_user_profile');
   };
 
   return (
