@@ -8,7 +8,7 @@ interface ESPNTeam {
 
 interface ESPNCompetitor {
   team: ESPNTeam;
-  score: number;
+  score: number | { value: number; displayValue: string };
 }
 
 interface ESPNEvent {
@@ -92,17 +92,23 @@ const mapEventToGame = (event: ESPNEvent): Game => {
     details = 'Final';
   }
 
+  const getScore = (score: any): number | null => {
+    if (typeof score === 'number') return score;
+    if (score?.value !== undefined && typeof score.value === 'number') return score.value;
+    return null;
+  };
+
   return {
     id: event.id,
     status,
     details,
     awayTeam: {
       name: awayTeam?.team?.displayName ? awayTeam.team.displayName.split(' ').pop() || awayTeam.team.displayName : 'Away',
-      score: typeof awayTeam?.score === 'number' ? awayTeam.score : null
+      score: getScore(awayTeam?.score)
     },
     homeTeam: {
       name: homeTeam?.team?.displayName ? homeTeam.team.displayName.split(' ').pop() || homeTeam.team.displayName : 'Home',
-      score: typeof homeTeam?.score === 'number' ? homeTeam.score : null
+      score: getScore(homeTeam?.score)
     }
   };
 };
