@@ -11,6 +11,7 @@
     "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
+    "@doist/todoist-api-typescript": "^7.6.1",
     "lucide-react": "^0.577.0",
     "motion": "^12.38.0",
     "react": "^19.2.0",
