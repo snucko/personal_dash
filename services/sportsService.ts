@@ -93,8 +93,11 @@ const mapEventToGame = (event: ESPNEvent): Game => {
   }
 
   const getScore = (score: any): number | null => {
-    if (typeof score === 'number') return score;
-    if (score?.value !== undefined && typeof score.value === 'number') return score.value;
+    if (score === null || score === undefined) return null;
+    if (typeof score === 'number') return Math.round(score);
+    if (typeof score === 'object' && 'value' in score && typeof score.value === 'number') {
+      return Math.round(score.value);
+    }
     return null;
   };
 
