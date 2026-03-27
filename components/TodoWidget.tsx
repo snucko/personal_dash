@@ -5,10 +5,10 @@ import { CheckCircle2, Circle, Trash2, Plus, AlertCircle, Loader2 } from 'lucide
 import type { GoogleTask } from '../types';
 import WidgetCard from './WidgetCard';
 import { ICONS } from '../constants';
-import { getTasks, addTask, updateTask, deleteTask } from '../services/googleApiService';
+import { getTasks, addTask, updateTask, deleteTask } from '../services/todoistService';
 
 interface TodoWidgetProps {
-    accessToken: string | null;
+    accessToken?: string | null;
 }
 
 const TodoWidget: React.FC<TodoWidgetProps> = ({ accessToken }) => {
@@ -18,11 +18,10 @@ const TodoWidget: React.FC<TodoWidgetProps> = ({ accessToken }) => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchTasks = async () => {
-    if (!accessToken) return;
     setLoading(true);
     setError(null);
     try {
-        const tasks = await getTasks(accessToken);
+        const tasks = await getTasks();
         setTodos(tasks);
     } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to fetch tasks.");
@@ -34,12 +33,12 @@ const TodoWidget: React.FC<TodoWidgetProps> = ({ accessToken }) => {
 
   useEffect(() => {
     fetchTasks();
-  }, [accessToken]);
+  }, []);
 
 
   const handleAddTodo = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newTodo.trim() === '' || !accessToken) return;
+    if (newTodo.trim() === '') return;
     
     // Optimistic UI update
     const tempId = `temp-${Date.now()}`;
@@ -91,18 +90,8 @@ const TodoWidget: React.FC<TodoWidgetProps> = ({ accessToken }) => {
     }
   };
   
-  if (!accessToken) {
-    return (
-        <WidgetCard title="To-Do List" icon={ICONS.todo} className="h-full">
-            <div className="flex-grow flex flex-col items-center justify-center text-center text-slate-400">
-                <p>Connect your Google Account to manage your tasks.</p>
-            </div>
-        </WidgetCard>
-    );
-  }
-
   return (
-    <WidgetCard title="Google Tasks" icon={ICONS.todo} className="h-full">
+    <WidgetCard title="To-Do List" icon={ICONS.todo} className="h-full">
         <div className="flex flex-col h-full gap-6">
             <div className="flex items-center justify-between">
                 <div>

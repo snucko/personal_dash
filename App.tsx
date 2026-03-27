@@ -253,7 +253,7 @@ const App: React.FC = () => {
              {/* Tasks takes the rest */}
              <div className="xl:col-span-2 h-full min-h-[600px] flex flex-col">
                <ErrorBoundary>
-                 <TodoWidget accessToken={accessToken} />
+                 <TodoWidget />
                </ErrorBoundary>
              </div>
            </div>
