@@ -98,24 +98,30 @@ const mapEventToGame = (event: ESPNEvent): Game => {
 
 export const getBruinsSchedule = async (limit: number = 5): Promise<SportsData> => {
   try {
-    // Fetch Bruins schedule from ESPN
+    // Fetch scoreboard and filter for Bruins
     const response = await fetch(
-      `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/${BRUINS_ID}`
+      `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard`
     );
 
     if (!response.ok) {
       throw new Error(`ESPN API error: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data: ESPNScheduleResponse = await response.json();
     
-    // Get schedule from events
-    const events = data.events || [];
-    const games = events
+    // Filter for Bruins games
+    const bruinsGames = data.events
+      .filter(event => 
+        event.competitions[0]?.competitors?.some(c => c.team.id === BRUINS_ID)
+      )
       .slice(0, limit)
       .map(mapEventToGame);
 
-    return games;
+    if (bruinsGames.length === 0) {
+      console.warn('No Bruins games found in scoreboard');
+    }
+
+    return bruinsGames;
   } catch (error) {
     console.error('Failed to fetch Bruins schedule:', error);
     throw new Error(

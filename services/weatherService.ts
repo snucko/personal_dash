@@ -78,18 +78,40 @@ export const getUserLocation = (): Promise<GeoLocation> => {
 };
 
 const reverseGeocode = async (lat: number, lon: number): Promise<string> => {
-  const response = await fetch(
-    `https://geocoding-api.open-meteo.com/v1/search?latitude=${lat}&longitude=${lon}&language=en&limit=1`
-  );
-  const data: ReverseGeocodeResponse = await response.json();
-  
-  if (!data.results || data.results.length === 0) {
-    return 'Unknown Location';
+  try {
+    // Use Nominatim (OpenStreetMap) for reverse geocoding
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+      {
+        headers: {
+          'Accept-Language': 'en'
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      return 'Current Location';
+    }
+    
+    const data: any = await response.json();
+    
+    if (!data.address) {
+      return 'Current Location';
+    }
+    
+    // Prefer city > town > county > state
+    const city = data.address.city || data.address.town || data.address.county;
+    const state = data.address.state_code;
+    
+    if (city && state) {
+      return `${city}, ${state.toUpperCase()}`;
+    }
+    
+    return city || 'Current Location';
+  } catch (error) {
+    console.error('Reverse geocoding error:', error);
+    return 'Current Location';
   }
-  
-  const result = data.results[0];
-  const admin = result.admin1 ? ` ${result.admin1}` : '';
-  return `${result.name}${admin}`;
 };
 
 export const getWeather = async (location: GeoLocation): Promise<WeatherData> => {
