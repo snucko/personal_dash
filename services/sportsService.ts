@@ -46,12 +46,13 @@ const BRUINS_NAME = 'Boston Bruins';
 const mapEventToGame = (event: ESPNEvent): Game => {
   const competition = event.competitions[0];
   const statusType = competition.status.type.name.toUpperCase();
+  const statusState = competition.status.type.state?.toLowerCase() || '';
   
-  // Determine game status
+  // Determine game status based on ESPN status codes
   let status: 'LIVE' | 'UPCOMING' | 'FINAL';
-  if (statusType.includes('IN PROGRESS') || statusType.includes('HALFTIME')) {
+  if (statusType.includes('PROGRESS') || statusType.includes('HALFTIME') || statusState === 'in') {
     status = 'LIVE';
-  } else if (statusType.includes('SCHEDULED') || statusType.includes('UPCOMING')) {
+  } else if (statusType.includes('SCHEDULED') || statusState === 'pre') {
     status = 'UPCOMING';
   } else {
     status = 'FINAL';
