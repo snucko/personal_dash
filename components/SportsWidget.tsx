@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { SportsData, Game } from '../types';
 import WidgetCard from './WidgetCard';
+import { getBruinsSchedule } from '../services/sportsService';
 
 interface SportsWidgetProps {
   team: string;
@@ -28,11 +29,11 @@ const GameRow: React.FC<{ game: Game }> = ({ game }) => {
             <div className="flex flex-col">
                 <div className="flex items-center">
                     <span className="w-20 truncate">{game.awayTeam.name}</span>
-                    <span className="font-bold text-slate-200 ml-2">{game.awayTeam.score}</span>
+                    <span className="font-bold text-slate-200 ml-2">{game.awayTeam.score ?? '-'}</span>
                 </div>
                 <div className="flex items-center mt-1">
                     <span className="w-20 truncate">{game.homeTeam.name}</span>
-                    <span className="font-bold text-slate-200 ml-2">{game.homeTeam.score}</span>
+                    <span className="font-bold text-slate-200 ml-2">{game.homeTeam.score ?? '-'}</span>
                 </div>
             </div>
             <div className="text-right flex-shrink-0 ml-2">
@@ -42,34 +43,68 @@ const GameRow: React.FC<{ game: Game }> = ({ game }) => {
         </div>
     </div>
   );
-}
+};
+
+const LoadingSkeleton: React.FC = () => (
+  <div className="animate-pulse space-y-4">
+    {[...Array(2)].map((_, i) => (
+      <div key={i} className="flex justify-between items-center">
+        <div className="space-y-2">
+          <div className="h-4 bg-slate-700 rounded w-24"></div>
+          <div className="h-4 bg-slate-700 rounded w-20"></div>
+        </div>
+        <div className="h-4 bg-slate-700 rounded w-16"></div>
+      </div>
+    ))}
+  </div>
+);
+
+const ErrorState: React.FC<{ onRetry: () => void }> = ({ onRetry }) => (
+  <div className="text-center">
+    <p className="text-sm text-red-400 mb-3">Failed to load scores</p>
+    <button
+      onClick={onRetry}
+      className="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded transition-colors"
+    >
+      Retry
+    </button>
+  </div>
+);
 
 const SportsWidget: React.FC<SportsWidgetProps> = ({ team, league, icon }) => {
-  const [data] = useState<SportsData>([
-    {
-      id: '1',
-      status: 'FINAL',
-      details: 'Final',
-      awayTeam: { name: 'Away Team', score: 3 },
-      homeTeam: { name: team, score: 4 }
+  const [data, setData] = useState<SportsData>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadScores = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const scores = await getBruinsSchedule(3);
+      setData(scores);
+    } catch (err) {
+      console.error('Sports fetch error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load scores');
+      setData([]);
+    } finally {
+      setIsLoading(false);
     }
-  ]);
+  };
+
+  useEffect(() => {
+    loadScores();
+    // Refresh scores every 5 minutes during season
+    const interval = setInterval(loadScores, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const renderContent = () => {
-    if (!data) {
-      return (
-        <div className="animate-pulse space-y-4">
-          {[...Array(2)].map((_, i) => (
-            <div key={i} className="flex justify-between items-center">
-                <div className="space-y-2">
-                    <div className="h-4 bg-slate-700 rounded w-24"></div>
-                    <div className="h-4 bg-slate-700 rounded w-20"></div>
-                </div>
-                <div className="h-4 bg-slate-700 rounded w-16"></div>
-            </div>
-          ))}
-        </div>
-      );
+    if (isLoading) {
+      return <LoadingSkeleton />;
+    }
+
+    if (error) {
+      return <ErrorState onRetry={loadScores} />;
     }
 
     if (data.length > 0) {
@@ -82,9 +117,8 @@ const SportsWidget: React.FC<SportsWidgetProps> = ({ team, league, icon }) => {
       );
     }
 
-    return <p className="text-slate-400 text-center">No current or upcoming games.</p>;
+    return <p className="text-slate-400 text-center text-sm">No games found</p>;
   };
-
 
   return (
     <WidgetCard title={league} icon={icon}>

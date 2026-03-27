@@ -1,0 +1,150 @@
+import type { Game, SportsData } from '../types';
+
+interface ESPNTeam {
+  id: string;
+  displayName: string;
+  abbreviation: string;
+}
+
+interface ESPNCompetitor {
+  team: ESPNTeam;
+  score: number;
+}
+
+interface ESPNEvent {
+  id: string;
+  name: string;
+  date: string;
+  status: {
+    type: {
+      name: string;
+      state: string;
+    };
+    period?: number;
+    displayClock?: string;
+  };
+  competitions: Array<{
+    status: {
+      type: {
+        name: string;
+        state: string;
+      };
+      period?: number;
+      displayClock?: string;
+    };
+    competitors: ESPNCompetitor[];
+  }>;
+}
+
+interface ESPNScheduleResponse {
+  events: ESPNEvent[];
+}
+
+const BRUINS_ID = '25'; // Boston Bruins ESPN ID
+const BRUINS_NAME = 'Boston Bruins';
+
+const mapEventToGame = (event: ESPNEvent): Game => {
+  const competition = event.competitions[0];
+  const statusType = competition.status.type.name.toUpperCase();
+  
+  // Determine game status
+  let status: 'LIVE' | 'UPCOMING' | 'FINAL';
+  if (statusType.includes('IN PROGRESS') || statusType.includes('HALFTIME')) {
+    status = 'LIVE';
+  } else if (statusType.includes('SCHEDULED') || statusType.includes('UPCOMING')) {
+    status = 'UPCOMING';
+  } else {
+    status = 'FINAL';
+  }
+
+  // Parse competitors
+  const homeTeam = competition.competitors.find(c => c.team.id === BRUINS_ID) || competition.competitors[1];
+  const awayTeam = competition.competitors.find(c => c.team.id !== homeTeam.team.id) || competition.competitors[0];
+
+  // Format details based on status
+  let details = '';
+  if (status === 'LIVE' && competition.status.displayClock) {
+    details = `${competition.status.displayClock}`;
+  } else if (status === 'UPCOMING') {
+    const date = new Date(event.date);
+    details = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  } else {
+    details = 'Final';
+  }
+
+  return {
+    id: event.id,
+    status,
+    details,
+    awayTeam: {
+      name: awayTeam.team.displayName.split(' ').pop() || awayTeam.team.displayName,
+      score: awayTeam.score ?? null
+    },
+    homeTeam: {
+      name: homeTeam.team.displayName.split(' ').pop() || homeTeam.team.displayName,
+      score: homeTeam.score ?? null
+    }
+  };
+};
+
+export const getBruinsSchedule = async (limit: number = 5): Promise<SportsData> => {
+  try {
+    // Fetch Bruins schedule from ESPN
+    const response = await fetch(
+      `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/${BRUINS_ID}`
+    );
+
+    if (!response.ok) {
+      throw new Error(`ESPN API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // Get schedule from events
+    const events = data.events || [];
+    const games = events
+      .slice(0, limit)
+      .map(mapEventToGame);
+
+    return games;
+  } catch (error) {
+    console.error('Failed to fetch Bruins schedule:', error);
+    throw new Error(
+      error instanceof Error 
+        ? error.message 
+        : 'Failed to fetch sports data'
+    );
+  }
+};
+
+export const getNHLScores = async (): Promise<SportsData> => {
+  try {
+    // Fallback to general NHL schedule if Bruins specific fails
+    const response = await fetch(
+      'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard'
+    );
+
+    if (!response.ok) {
+      throw new Error(`ESPN API error: ${response.status}`);
+    }
+
+    const data: ESPNScheduleResponse = await response.json();
+    
+    // Filter for Bruins games
+    const bruinsGames = data.events
+      .filter(event => 
+        event.competitions[0]?.competitors?.some(c => c.team.id === BRUINS_ID)
+      )
+      .slice(0, 3)
+      .map(mapEventToGame);
+
+    return bruinsGames;
+  } catch (error) {
+    console.error('Failed to fetch NHL scores:', error);
+    throw new Error(
+      error instanceof Error 
+        ? error.message 
+        : 'Failed to fetch sports data'
+    );
+  }
+};
