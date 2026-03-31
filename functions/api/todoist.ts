@@ -4,6 +4,7 @@ interface Env {
 
 const TODOIST_API_URL = 'https://api.todoist.com/rest/v2';
 
+// Cloudflare Pages Function Handler
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     // Handle CORS preflight
