@@ -1,8 +1,14 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "personaldash",
-  "main": "functions/api/[...path].ts",
+  "main": "src/worker.ts",
   "compatibility_date": "2025-03-30",
   "account_id": "7870663c256e665e939a8d93758c54e3",
+  "routes": [
+    {
+      "pattern": "personal.tivnan.net/api/todoist/*",
+      "zone_name": "tivnan.net"
+    }
+  ],
   "compatibility_flags": ["nodejs_compat"]
 }

@@ -4,7 +4,6 @@ interface Env {
 
 const TODOIST_API_URL = 'https://api.todoist.com/rest/v2';
 
-// Cloudflare Pages Function Handler
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     // Handle CORS preflight
@@ -22,13 +21,12 @@ export default {
     const url = new URL(request.url);
     const pathname = url.pathname;
 
-    // Only allow /api/todoist/* requests
-    if (!pathname.startsWith('/api/todoist/')) {
-      return new Response('Not found', { status: 404 });
+    // Extract path after /api/todoist
+    let todoist_path = pathname.replace(/^\/api\/todoist/, '') || '/tasks';
+    if (!todoist_path.startsWith('/')) {
+      todoist_path = '/' + todoist_path;
     }
-
-    // Remove /api/todoist prefix
-    const todoist_path = pathname.replace('/api/todoist', '');
+    
     const todoist_url = new URL(TODOIST_API_URL + todoist_path);
 
     // Copy query parameters
