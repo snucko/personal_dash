@@ -6,6 +6,18 @@ const TODOIST_API_URL = 'https://api.todoist.com/rest/v2';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    // Handle CORS preflight
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
+    }
+
     const url = new URL(request.url);
     const pathname = url.pathname;
 
@@ -21,7 +33,7 @@ export default {
     // Copy query parameters
     todoist_url.search = url.search;
 
-    const headers = new Headers(request.headers);
+    const headers = new Headers();
     headers.set('Authorization', `Bearer ${env.TODOIST_API}`);
     headers.set('Content-Type', 'application/json');
 
@@ -29,7 +41,7 @@ export default {
       const response = await fetch(todoist_url.toString(), {
         method: request.method,
         headers: headers,
-        body: request.method !== 'GET' && request.method !== 'DELETE' ? await request.text() : undefined,
+        body: request.method !== 'GET' && request.method !== 'DELETE' && request.method !== 'OPTIONS' ? await request.text() : undefined,
       });
 
       // Add CORS headers
@@ -44,7 +56,8 @@ export default {
         headers: corsHeaders,
       });
     } catch (error) {
-      return new Response(JSON.stringify({ error: 'Failed to proxy request' }), {
+      console.error('Proxy error:', error);
+      return new Response(JSON.stringify({ error: 'Failed to proxy request', details: error.toString() }), {
         status: 500,
         headers: {
           'Content-Type': 'application/json',
@@ -52,15 +65,5 @@ export default {
         },
       });
     }
-  },
-
-  async options(request: Request): Promise<Response> {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
-    });
-  },
+  }
 };

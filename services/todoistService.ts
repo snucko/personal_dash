@@ -10,12 +10,11 @@ interface TodoistTask {
   };
 }
 
-const TODOIST_API_URL = 'https://api.todoist.com/rest/v2';
+// Use Cloudflare Worker proxy to avoid CORS
+const TODOIST_API_URL = '/api/todoist';
 
 const createHeaders = () => {
-  const apiKey = import.meta.env.VITE_TODOIST_API || '';
   return {
-    'Authorization': `Bearer ${apiKey}`,
     'Content-Type': 'application/json'
   };
 };
@@ -29,11 +28,6 @@ const handleResponse = async (response: Response) => {
 };
 
 export const getTasks = async (): Promise<GoogleTask[]> => {
-  const apiKey = import.meta.env.VITE_TODOIST_API;
-  if (!apiKey) {
-    throw new Error('VITE_TODOIST_API not configured');
-  }
-
   const response = await fetch(`${TODOIST_API_URL}/tasks`, {
     headers: createHeaders()
   });

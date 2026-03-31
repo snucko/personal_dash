@@ -1,13 +1,8 @@
-name = "personal-dashboard"
-type = "javascript"
-account_id = ""
-workers_dev = true
-route = ""
-zone_id = ""
-
-[env.production]
-vars = { ENVIRONMENT = "production" }
-
-[build]
-command = "npm run build"
-cwd = "./"
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "personal-dashboard-worker",
+  "main": "src/worker.ts",
+  "compatibility_date": "2025-03-30",
+  "route": "personal.tivnan.net/api/todoist/*",
+  "compatibility_flags": ["nodejs_compat"]
+}
