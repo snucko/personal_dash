@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "personaldash",
-  "main": "functions/api/todoist.ts",
+  "main": "functions/api/[...path].ts",
   "compatibility_date": "2025-03-30",
   "account_id": "7870663c256e665e939a8d93758c54e3",
   "compatibility_flags": ["nodejs_compat"]
